@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	geoIpDb        = "./out/GeoLite2-City.mmdb"
+	geoIpDb        = "GeoLite2-City.mmdb"
 	linuxLog       = "./out/failed.log"
 	onlyIpFile     = "./out/blacklist.log"
 	detailedIpFile = "./out/detailed.json"
