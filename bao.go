@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	geoIpDb    = "GeoLite2-City.mmdb"
-	linuxLog   = "failed.log"
-	onlyIpFile = "blacklist.log"
-	detailedIpFile = "detailed.json"
-	listIp []IpInfo
+	geoIpDb        = "./out/GeoLite2-City.mmdb"
+	linuxLog       = "./out/failed.log"
+	onlyIpFile     = "./out/blacklist.log"
+	detailedIpFile = "./out/detailed.json"
+	listIp         []IpInfo
 )
 
 type IpInfo struct {
-	Ip string
+	Ip      string
 	Country *geoip2.Country
 }
 
