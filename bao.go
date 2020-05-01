@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 )
 
 var (
@@ -75,13 +76,14 @@ func GetIpFromLog() {
 	rawLogScanner := bufio.NewScanner(file)
 
 	for rawLogScanner.Scan() {
-		rawLogParts := strings.Split(rawLogScanner.Text(), " ")
-		ip := rawLogParts[len(rawLogParts)-4] //TODO iterate over all array
+		ip := ExtractNIpFromString(rawLogScanner.Text(), 1)
 
-		if IsIpv4Net(ip) && !ipVisited[ip] {
-			ipVisited[ip] = true
-			if GeoIpSearch(ip, db) {
-				f.WriteString(ip + "\n")
+		for i := 0; i < len(ip); i++ {
+			if !ipVisited[ip[i]] {
+				ipVisited[ip[i]] = true
+				if GeoIpSearch(ip[i], db) {
+					f.WriteString(ip[i] + "\n")
+				}
 			}
 		}
 	}
@@ -89,6 +91,38 @@ func GetIpFromLog() {
 	WriteObjectToJsonFile()
 
 	fmt.Println("done")
+}
+
+func ExtractNIpFromString(v string, n int) []string {
+	rawLogParts := strings.Split(v, " ")
+	ipSlice := make([]string, 2)
+	var wg sync.WaitGroup
+	maxIp := 0
+	valueLock := &sync.Mutex{}
+
+	for i := 0; i < len(rawLogParts); i++ {
+		wg.Add(1)
+
+		go func(part string, arr *[]string) {
+			defer wg.Done()
+			valueLock.Lock()
+			defer valueLock.Unlock()
+
+			if maxIp == n {
+				return
+			}
+
+			if IsIpv4Net(part) {
+				*arr = append(*arr, part)
+				maxIp++
+				return
+			}
+		}(rawLogParts[i], &ipSlice)
+	}
+
+	wg.Wait()
+
+	return ipSlice
 }
 
 func WriteObjectToJsonFile() {
