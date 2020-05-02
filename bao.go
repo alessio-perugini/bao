@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/google/nftables"
 	"github.com/oschwald/geoip2-golang"
 	"log"
 	"net"
@@ -12,19 +13,29 @@ import (
 	"sync"
 )
 
-var (
-	geoIpDb        = "GeoLite2-City.mmdb"
-	linuxLog       = "./out/failed.log"
-	onlyIpFile     = "./out/blacklist.log"
-	detailedIpFile = "./out/detailed.json"
-	listIp         []IpInfo
-)
+type Config struct {
+	GeoIpDb         string
+	LinuxLog        string
+	OnlyIpFile      string
+	DetailedIpFile  string
+	NationFilter    string
+	AbuseIPDBAPIKey string
+	NFTblock        bool
+}
 
 type IpInfo struct {
 	Ip      string
 	Country *geoip2.Country
 }
 
+var (
+	listIp []IpInfo
+	config *Config
+)
+
+func NewConfig(p *Config) {
+	config = p
+}
 func IsIpv4Net(host string) bool {
 	return net.ParseIP(host) != nil
 }
@@ -40,11 +51,11 @@ func GeoIpSearch(ip string, db *geoip2.Reader) bool {
 
 	infoIp := IpInfo{Ip: ip, Country: record}
 	listIp = append(listIp, infoIp)
-	return record.Country.IsoCode != "IT" //TODO map?
+	return record.Country.IsoCode != strings.ToUpper(config.NationFilter) //TODO map?
 }
 
 func GetIpFromLog() {
-	file, err := os.Open(linuxLog) //Read raw linux log
+	file, err := os.Open(config.LinuxLog) //Read raw linux log
 	defer func() {
 		err := file.Close()
 		if err != nil {
@@ -55,7 +66,7 @@ func GetIpFromLog() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create(onlyIpFile)
+	f, err := os.Create(config.OnlyIpFile)
 	defer func() {
 		err := f.Close()
 		if err != nil {
@@ -66,7 +77,7 @@ func GetIpFromLog() {
 		log.Fatal(err)
 	}
 
-	db, err := geoip2.Open(geoIpDb) //Open geoip for filtering purpose
+	db, err := geoip2.Open(config.GeoIpDb) //Open geoip for filtering purpose
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,7 +137,7 @@ func ExtractNIpFromString(v string, n int) []string {
 }
 
 func WriteObjectToJsonFile() {
-	fileDetail, err := os.Create(detailedIpFile)
+	fileDetail, err := os.Create(config.DetailedIpFile)
 	defer func() {
 		err := fileDetail.Close()
 		if err != nil {
@@ -142,4 +153,12 @@ func WriteObjectToJsonFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func AbuseIpResult(ip string) {
+
+}
+
+func AddToNftables(ip string) {
+
 }

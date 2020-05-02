@@ -3,40 +3,34 @@ package main
 import (
 	"fmt"
 	"github.com/alessio-perugini/bao"
-	"github.com/urfave/cli/v2"
-	"log"
-	"os"
+	"github.com/spf13/cobra"
+)
+
+var (
+	version = "version"
 )
 
 func main() {
-	app := &cli.App{
-		Name:  "bao",
-		Usage: "ip log address parser",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "config",
-				Aliases: []string{"c"},
-				Usage:   "Load configuration from `FILE`",
-			},
+	config := new(bao.Config)
+
+	var cmd = &cobra.Command{
+		Use:   "bao",
+		Short: "ip log address parser",
+		Long: `echo is for echoing anything back.
+Echo works a lot like print, except it has a child command.`,
+		Args: cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			bao.GetIpFromLog()
 		},
-		Action: func(c *cli.Context) error {
-			name := "Nefertiti"
-			if c.NArg() > 0 {
-				name = c.Args().Get(0)
-			}
-			if c.String("lang") == "spanish" {
-				fmt.Println("Hola", name)
-			} else {
-				fmt.Println("Hello", name)
-			}
-			return nil
-		},
+		Version: fmt.Sprintf("%s", "version"),
 	}
 
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
+	cmd.Flags().StringVarP(&config.GeoIpDb, "geoip-db", "g", "", "geoipdb")
+	cmd.Flags().StringVarP(&config.LinuxLog, "flog", "i", "", "log file to analyze")
+	cmd.Flags().StringVarP(&config.OnlyIpFile, "fplain-ip", "p", "", "file to save blacklisted plain ip")
+	cmd.Flags().StringVarP(&config.DetailedIpFile, "fdetailed-ip", "d", "", "file to save detail about blacklisted ip")
+	cmd.Flags().StringVarP(&config.NationFilter, "filter", "f", "en", "type the country to whitelist separate with | ")
+	bao.NewConfig(config)
 
-	bao.GetIpFromLog()
+	cmd.Execute()
 }
